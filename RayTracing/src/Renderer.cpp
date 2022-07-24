@@ -1,6 +1,8 @@
 #include "Renderer.h"
 
 #include "Walnut/Random.h"
+#include <iostream>
+
 #include <cmath> 
 
 namespace RayTracing {
@@ -38,7 +40,7 @@ namespace RayTracing {
 
 	uint32_t Renderer::PerPixel(glm::vec2 coord)
 	{
-		glm::vec3 colorOut = glm::vec3(0.0f);
+		glm::vec3 colorOut = glm::vec3(0.1f);
 	
 		glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
 		glm::vec3 rayDirection(coord.x, coord.y, -1.0f);
@@ -46,7 +48,7 @@ namespace RayTracing {
 
 		float radius = 0.5;
 		glm::vec3 sphereOrigin = glm::vec3(0.0f);
-		glm::vec3 lightDir = glm::vec3(-1, -1, 1);
+		glm::vec3 lightDir = glm::vec3(-1.0f, -0.9, 0.5);
 
 		float a = glm::dot(rayDirection, rayDirection);
 		float b = 2.0f * glm::dot(rayOrigin, rayDirection);
@@ -56,7 +58,7 @@ namespace RayTracing {
 
 		if (discriminant >= 0.0f)
 		{
-			float t0 = -b - sqrt(discriminant) / (2.0f * a);
+			float t0 = -b + sqrt(discriminant) / (2.0f * a);
 			//float t1 = -b + sqrt(discriminant) / (2.0f * a);
 			
 			glm::vec3 hitpos = rayOrigin + rayDirection * t0;
@@ -68,9 +70,14 @@ namespace RayTracing {
 
 		}
 
+
+		colorOut = glm::clamp(colorOut, 0.0f, 1.0f);
+
 		uint8_t intr = (uint8_t)(colorOut.x * 255.0f);
 		uint8_t intg = (uint8_t)(colorOut.y * 255.0f);
 		uint8_t intb = (uint8_t)(colorOut.z * 255.0f);
+
+		
 
 		return 0xff0000000 | (intb << 16) | (intg << 8) | intr;
 	}
