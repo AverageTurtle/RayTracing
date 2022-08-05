@@ -15,6 +15,8 @@ public:
 		if (ImGui::Button("Render")) {
 			Render();
 		}
+		
+
 		ImGui::Text("Last Render Time: %.3fms", m_LastRenderTime);
 		ImGui::End();
 
@@ -30,6 +32,8 @@ public:
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+
+		Render();
 	}
 
 	void Render() {
