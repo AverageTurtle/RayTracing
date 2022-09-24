@@ -38,7 +38,7 @@ namespace RayTracing {
 		m_ImageData = new uint32_t[width * height];
 	}
 
-	void Renderer::Render(const Camera& camera)
+	void Renderer::Render(const Scene& scene, const Camera& camera)
 	{
 		if (m_FinalImage == nullptr)
 			return;
@@ -54,7 +54,7 @@ namespace RayTracing {
 			{
 				ray.Direction = rayDirections[x + y * m_FinalImage->GetWidth()];
 
-				glm::vec4 color = TraceRay(ray);
+				glm::vec4 color = TraceRay(scene, ray);
 				color = glm::clamp(color, 0.0f, 1.0f);
 
 				m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(color);
@@ -64,33 +64,51 @@ namespace RayTracing {
 		m_FinalImage->SetData(m_ImageData);
 	}
 
-	glm::vec4 Renderer::TraceRay(const Ray& ray)
+	glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 	{
-		glm::vec3 colorOut = glm::vec3(0.7f, 0.7f, 1.0f);
+		glm::vec3 colorOut = glm::vec3(0.6f, 0.6f, 1.0f);
 
-		// a = rayorigin
-		// b = ray directionn
-
-		float a = glm::dot(ray.Direction, ray.Direction);
-		float b = 2.0f * glm::dot(ray.Origin, ray.Direction);
-		float c = glm::dot(ray.Origin, ray.Origin) - radius * radius;
-
-		// Quadratic Forumula discriminant:
-		// b^2 - 4ac
-		float discriminant = b * b - 4.0f * a * c;
-
-		if (discriminant < 0.0f)
+		if(scene.Spheres.size() == 0)
 			return glm::vec4(colorOut, 1.0f);
 
-		//float t0 = -b + sqrt(discriminant) / (2.0f * a);
-		float ClosestT = (-b - sqrt(discriminant)) / (2.0f * a);
+		const Sphere* closestSphere = nullptr;
+		float hitDistance = FLT_MAX;
+		for (const Sphere& sphere : scene.Spheres) {
+			glm::vec3 origin = ray.Origin - sphere.Position;
 
-		glm::vec3 hitpoint = ray.Origin + ray.Direction * ClosestT;
-		glm::vec3 normal = hitpoint - sphereOrigin;
+			glm::vec3 lightDir = glm::vec3(-0.5f, -0.8, -0.5);
+
+			float a = glm::dot(ray.Direction, ray.Direction);
+			float b = 2.0f * glm::dot(origin, ray.Direction);
+			float c = glm::dot(origin, origin) - sphere.Radius * sphere.Radius;
+
+			// Quadratic Forumula discriminant:
+			// b^2 - 4ac
+			float discriminant = b * b - 4.0f * a * c;
+			if (discriminant < 0.0f)
+				continue;
+
+			//float t0 = -b + sqrt(discriminant) / (2.0f * a);
+			float closestT = (-b - sqrt(discriminant)) / (2.0f * a);
+			if (closestT < 0)
+				continue;
+
+			if (closestT < hitDistance) {
+				hitDistance = closestT;
+				closestSphere = &sphere;
+			}
+		}
+
+		if (closestSphere == nullptr)
+			return glm::vec4(colorOut, 1.0f);
+
+		glm::vec3 origin = ray.Origin - closestSphere->Position;
+		glm::vec3 hitpoint = origin + ray.Direction * hitDistance;
+		glm::vec3 normal = hitpoint - glm::vec3{0.0f, 0.0f, 0.0f};
 		normal = glm::normalize(normal);
 
 		float light = glm::max(glm::dot(normal, -lightDir), 0.0f);
-		colorOut = light * (0.5f * glm::vec3(normal.x + 1, normal.y + 1, normal.z + 1));
+		colorOut = light * closestSphere->Albedo;
 		return glm::vec4(colorOut, 1.0f);
 	}
 }

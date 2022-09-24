@@ -7,11 +7,29 @@
 #include "Renderer.h"
 #include "Camera.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 class ExampleLayer : public Walnut::Layer
 {
 public:
 	ExampleLayer()
-		: m_Camera(45.0f, 0.01f, 100.0f) {}
+		: m_Camera(45.0f, 0.01f, 100.0f) 
+	{
+		{
+			Sphere sphere;
+			sphere.Position = { 0.0f, 0.0f, 0.0f };
+			sphere.Radius = 0.5f;
+			sphere.Albedo = { 1.0f, 0.3, 1.0f };
+			m_Scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { 1.0f, 0.0f, -5.0f };
+			sphere.Radius = 0.7f;
+			sphere.Albedo = { 0.0f, 0.3, 1.0f };
+			m_Scene.Spheres.push_back(sphere);
+		}
+	}
 	virtual void OnUpdate(float ts) override {
 		m_Camera.OnUpdate(ts);
 		Render();
@@ -26,6 +44,19 @@ public:
 
 		ImGui::Text("Last Render Time: %.3fms", m_LastRenderTime);
 		ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.01f, 2.0f);
+		ImGui::End();
+
+		ImGui::Begin("Scene");
+		for (size_t i = 0; i < m_Scene.Spheres.size(); i++) {
+			ImGui::PushID(i);
+
+			ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[i].Position), 0.1f);
+			ImGui::DragFloat("Radius", &m_Scene.Spheres[i].Radius, 0.1f);
+			ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[i].Albedo), 0.1f);
+
+			ImGui::PopID();
+		}
+		
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -47,7 +78,7 @@ public:
 
 		m_Renderer.OnResize(m_ViewportHeight * m_RenderScale, m_ViewportWidth * m_RenderScale);
 		m_Camera.OnResize(m_ViewportHeight * m_RenderScale, m_ViewportWidth * m_RenderScale);
-		m_Renderer.Render(m_Camera);
+		m_Renderer.Render(m_Scene, m_Camera);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}
@@ -58,6 +89,7 @@ private:
 	float m_RenderScale = 1.0f;
 
 	Camera m_Camera;
+	Scene m_Scene;
 
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 };
