@@ -40,21 +40,25 @@ public:
 		if (ImGui::Button("Render")) {
 			Render();
 		}
-		
-
 		ImGui::Text("Last Render Time: %.3fms", m_LastRenderTime);
 		ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.01f, 2.0f);
+
+		if (ImGui::Button("Add Sphere")) {
+			Sphere sphere;
+			m_Scene.Spheres.push_back(sphere);
+		}
+
 		ImGui::End();
 
 		ImGui::Begin("Scene");
 		for (size_t i = 0; i < m_Scene.Spheres.size(); i++) {
-			ImGui::PushID(i);
+			if(ImGui::TreeNode(std::to_string(i).c_str())) {
+				ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[i].Position), 0.1f);
+				ImGui::DragFloat("Radius", &m_Scene.Spheres[i].Radius, 0.1f);
+				ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[i].Albedo), 0.1f);
 
-			ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[i].Position), 0.1f);
-			ImGui::DragFloat("Radius", &m_Scene.Spheres[i].Radius, 0.1f);
-			ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[i].Albedo), 0.1f);
-
-			ImGui::PopID();
+				ImGui::TreePop();
+			}
 		}
 		
 		ImGui::End();
