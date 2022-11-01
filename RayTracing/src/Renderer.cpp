@@ -64,10 +64,10 @@ namespace RayTracing {
 		ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
 
 		glm::vec3 color(0.0f);
-		const int bounces = 2;
+		const int depth = 4;
 		float multiplier = 1.0f;
 
-		for (int i = 0; i < bounces; i++)
+		for (int i = 0; i < depth; i++)
 		{
 			Renderer::HitPayload payload = TraceRay(ray);
 
@@ -82,11 +82,14 @@ namespace RayTracing {
 			float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDir), 0.0f);
 
 			const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];
-			glm::vec3 sphereColor = lightIntensity * sphere.Albedo;
+			const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
+
+			glm::vec3 sphereColor = lightIntensity * material.Albedo;
 			color += sphereColor * multiplier;
 			multiplier *= 0.2f;
 			ray.Origin = payload.WorldPosition + (payload.WorldNormal * 0.0001f);
-			ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
+			ray.Direction = glm::reflect(ray.Direction, 
+				payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
 		}
 		return glm::vec4(color, 1.0f);
 	}
