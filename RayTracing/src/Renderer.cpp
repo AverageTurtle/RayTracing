@@ -36,6 +36,9 @@ namespace RayTracing {
 		
 		delete[] m_ImageData;
 		m_ImageData = new uint32_t[width * height];
+
+		delete[] m_AccumulationData;
+		m_AccumulationData = new glm::vec4[width * height];
 	}
 
 	void Renderer::Render(const Scene& scene, const Camera& camera)
@@ -44,17 +47,31 @@ namespace RayTracing {
 			return;
 		m_ActiveScene = &scene;
 		m_ActiveCamera = &camera;
+
+		if (m_FrameIndex == 1)
+			memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
+
 		for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++) 
 		{
 			for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 			{
-				glm::vec4 color = PerPixel(x, y);;
-				color = glm::clamp(color, 0.0f, 1.0f);
-				m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(color);
+				glm::vec4 color = PerPixel(x, y);
+				m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+
+				glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+				accumulatedColor /= (float)m_FrameIndex;
+
+				accumulatedColor = glm::clamp(accumulatedColor, 0.0f, 1.0f);
+				m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 			}
 		}
 		
 		m_FinalImage->SetData(m_ImageData);
+
+		if (m_Settings.Accumulate)
+			m_FrameIndex++;
+		else
+			m_FrameIndex = 1;
 	}
 
 	glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
@@ -64,7 +81,7 @@ namespace RayTracing {
 		ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
 
 		glm::vec3 color(0.0f);
-		const int depth = 4;
+		const int depth = 6;
 		float multiplier = 1.0f;
 
 		for (int i = 0; i < depth; i++)
@@ -78,7 +95,7 @@ namespace RayTracing {
 				break;
 			}
 
-			glm::vec3 lightDir = glm::vec3(-0.5f, -0.9, -0.5);
+			glm::vec3 lightDir = glm::vec3(-1, -1, -1);
 			float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDir), 0.0f);
 
 			const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];

@@ -21,7 +21,7 @@ public:
 
 		Material& blueSphere = m_Scene.Materials.emplace_back();
 		blueSphere.Albedo = { 0.0f, 0.3, 1.0f };
-		blueSphere.Roughness = 0.1f;
+		blueSphere.Roughness = 0.05f;
 
 		{
 			Sphere sphere;
@@ -39,7 +39,9 @@ public:
 		}
 	}
 	virtual void OnUpdate(float ts) override {
-		m_Camera.OnUpdate(ts);
+		if (m_Camera.OnUpdate(ts)) {
+			m_Renderer.ResetFrameIndex();
+		}
 		Render();
 	}
 	virtual void OnUIRender() override
@@ -47,6 +49,11 @@ public:
 		ImGui::Begin("Settings");
 		if (ImGui::Button("Render")) {
 			Render();
+		}
+		ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate);
+
+		if (ImGui::Button("Reset")) {
+			m_Renderer.ResetFrameIndex();
 		}
 		ImGui::Text("Last Render Time: %.3fms", m_LastRenderTime);
 		ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.01f, 2.0f);
