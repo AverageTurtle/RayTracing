@@ -21,11 +21,15 @@ public:
 
 		Material& blueSphere = m_Scene.Materials.emplace_back();
 		blueSphere.Albedo = { 0.0f, 0.3, 1.0f };
-		blueSphere.Roughness = 0.05f;
+		blueSphere.Roughness = 0.9f;
+
+		Material& glow = m_Scene.Materials.emplace_back();
+		glow.Albedo = { 1.3f, 1.3f, 1.3f };
+		glow.Roughness = 0.0f;
 
 		{
 			Sphere sphere;
-			sphere.Position = { 0.0f, 0.0f, 0.0f };
+			sphere.Position = { 0.0f, -0.2f, 0.0f };
 			sphere.Radius = 1.0f;
 			sphere.MaterialIndex = 0;
 			m_Scene.Spheres.push_back(sphere);
@@ -37,6 +41,15 @@ public:
 			sphere.MaterialIndex = 1;
 			m_Scene.Spheres.push_back(sphere);
 		}
+		{
+			Sphere sphere;
+			sphere.Position = { 2.0f, 2.0f, 0.0f };
+			sphere.Radius = 1.0f;
+			sphere.MaterialIndex = 2;
+			m_Scene.Spheres.push_back(sphere);
+		}
+
+		PointLight& pointLight = m_Scene.PointLights.emplace_back();
 	}
 	virtual void OnUpdate(float ts) override {
 		if (m_Camera.OnUpdate(ts)) {
@@ -61,12 +74,39 @@ public:
 		if (ImGui::Button("Add Sphere")) {
 			Sphere sphere;
 			m_Scene.Spheres.push_back(sphere);
+			m_Renderer.ResetFrameIndex();
 		}
 		if (ImGui::Button("Add Material")) {
 			Material material;
 			m_Scene.Materials.push_back(material);
+			m_Renderer.ResetFrameIndex();
 		}
 
+		if (ImGui::Button("Add Point Light")) {
+			PointLight pointLight;
+			m_Scene.PointLights.push_back(pointLight);
+			m_Renderer.ResetFrameIndex();
+		}
+
+		ImGui::End();
+
+		ImGui::Begin("Lights");
+		for (size_t i = 0; i < m_Scene.PointLights.size(); i++)
+		{
+			ImGui::PushID("PointLight: "+i);
+
+			PointLight& pointLight = m_Scene.PointLights[i];
+			if (ImGui::DragFloat3("Position", glm::value_ptr(pointLight.Position), 0.1f))
+				m_Renderer.ResetFrameIndex();
+			if (ImGui::DragFloat("Intesity", &pointLight.Intesity, 0.1f))
+				m_Renderer.ResetFrameIndex();
+			if (ImGui::ColorEdit3("Color", glm::value_ptr(pointLight.Color)))
+				m_Renderer.ResetFrameIndex();
+
+			ImGui::Separator();
+
+			ImGui::PopID();
+		}
 		ImGui::End();
 
 		ImGui::Begin("Scene");
@@ -75,9 +115,12 @@ public:
 			ImGui::PushID(i);
 
 			Sphere& sphere = m_Scene.Spheres[i];
-			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
-			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
-			ImGui::DragInt("Material", &sphere.MaterialIndex, 1.0f, 0, (int)m_Scene.Materials.size() - 1);
+			if(ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f))
+				m_Renderer.ResetFrameIndex();
+			if(ImGui::DragFloat("Radius", &sphere.Radius, 0.1f))
+				m_Renderer.ResetFrameIndex();
+			if(ImGui::DragInt("Material", &sphere.MaterialIndex, 1.0f, 0, (int)m_Scene.Materials.size() - 1))
+				m_Renderer.ResetFrameIndex();
 
 			ImGui::Separator();
 
@@ -89,9 +132,12 @@ public:
 			ImGui::PushID(i);
 
 			Material& material = m_Scene.Materials[i];
-			ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
-			ImGui::DragFloat("Roughness", &material.Roughness, 0.05f, 0.0f, 1.0f);
-			ImGui::DragFloat("Metallic", &material.Metallic, 0.05f, 0.0f, 1.0f);
+			if(ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo)))
+				m_Renderer.ResetFrameIndex();
+			if(ImGui::DragFloat("Roughness", &material.Roughness, 0.05f, 0.0f, 1.0f))
+				m_Renderer.ResetFrameIndex();
+			if(ImGui::DragFloat("Metallic", &material.Metallic, 0.05f, 0.0f, 1.0f))
+				m_Renderer.ResetFrameIndex();
 
 			ImGui::Separator();
 

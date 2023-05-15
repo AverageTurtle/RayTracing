@@ -36,8 +36,9 @@ namespace RayTracing {
 
 			uint32_t ObjectIndex;
 		};
-
 		glm::vec4 PerPixel(uint32_t x, uint32_t y); // RayGen
+
+		glm::vec3 CaculatePointLight(const PointLight& pointLight, const HitPayload& payload);
 
 		HitPayload TraceRay(const Ray& ray);
 		HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
@@ -50,8 +51,6 @@ namespace RayTracing {
 
 		const Scene* m_ActiveScene = nullptr;
 		const Camera* m_ActiveCamera = nullptr;
-
-		glm::vec3 lightDir = glm::vec3(-0.5f, -0.8, -0.5);
 		uint32_t* m_ImageData = nullptr;
 		glm::vec4* m_AccumulationData = nullptr;
 
