@@ -15,41 +15,99 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.01f, 100.0f) 
 	{
-		Material& pinkSphere = m_Scene.Materials.emplace_back();
-		pinkSphere.Albedo = { 1.0f, 0.3, 1.0f };
-		pinkSphere.Roughness = 0.0f;
+		
+		RefractiveMaterial* glass = new RefractiveMaterial();
+		m_Scene.Materials.push_back(glass);
 
-		Material& blueSphere = m_Scene.Materials.emplace_back();
-		blueSphere.Albedo = { 0.0f, 0.3, 1.0f };
-		blueSphere.Roughness = 0.9f;
+		DiffuseMaterial* white = new DiffuseMaterial();
+		white->Albedo = { 1.0f, 1.0f, 1.0f };
+		white->Roughness = 1.0f;
+		m_Scene.Materials.push_back(white);
 
-		Material& glow = m_Scene.Materials.emplace_back();
-		glow.Albedo = { 1.3f, 1.3f, 1.3f };
-		glow.Roughness = 0.0f;
+		DiffuseMaterial* red = new DiffuseMaterial();
+		red->Albedo = { 1.0f, 0.2f, 0.2f };
+		red->Roughness = 1.0f;
+		m_Scene.Materials.push_back(red);
+
+		DiffuseMaterial* green = new DiffuseMaterial();
+		green->Albedo = { 0.2f, 1.0f, 0.2f };
+		green->Roughness = 1.0f;
+		m_Scene.Materials.push_back(green);
+
+		DiffuseMaterial* blue = new DiffuseMaterial();
+		blue->Albedo = { 0.2f, 0.2f, 1.0f };
+		blue->Roughness = 1.0f;
+		m_Scene.Materials.push_back(blue);
+
+
+		DiffuseMaterial* pink = new DiffuseMaterial();
+		pink->Albedo = { 1.0f, 0.3, 1.0f };
+		pink->Roughness = 1.0f;
+		m_Scene.Materials.push_back(pink);
 
 		{
 			Sphere sphere;
 			sphere.Position = { 0.0f, -0.2f, 0.0f };
 			sphere.Radius = 1.0f;
+			sphere.MaterialIndex = 5;
+			m_Scene.Spheres.push_back(sphere);
+		}
+
+		{
+			Sphere sphere;
+			sphere.Position = { 2.0f, 2.0f, 0.0f };
+			sphere.Radius = 1.0f;
 			sphere.MaterialIndex = 0;
 			m_Scene.Spheres.push_back(sphere);
 		}
+
 		{
 			Sphere sphere;
-			sphere.Position = { 1.0f, -1001.0f, -5.0f };
+			sphere.Position = { 0.0f, -1010.0f, 0.0f };
 			sphere.Radius = 1000.0f;
 			sphere.MaterialIndex = 1;
 			m_Scene.Spheres.push_back(sphere);
 		}
 		{
 			Sphere sphere;
-			sphere.Position = { 2.0f, 2.0f, 0.0f };
-			sphere.Radius = 1.0f;
+			sphere.Position = { 0.0f, 1010.0f, 0.0f };
+			sphere.Radius = 1000.0f;
+			sphere.MaterialIndex = 1;
+			m_Scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { -1010.0f, 0.0f, -5.0f };
+			sphere.Radius = 1000.0f;
 			sphere.MaterialIndex = 2;
 			m_Scene.Spheres.push_back(sphere);
 		}
+		{
+			Sphere sphere;
+			sphere.Position = { 1010.0f, 0.0f, -5.0f };
+			sphere.Radius = 1000.0f;
+			sphere.MaterialIndex = 2;
+			m_Scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { 0.0f, 0.0f, -1010.0f };
+			sphere.Radius = 1000.0f;
+			sphere.MaterialIndex = 3;
+			m_Scene.Spheres.push_back(sphere); 
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { 0.0f, 0.0f, 1010.0f };
+			sphere.Radius = 1000.0f;
+			sphere.MaterialIndex = 4;
+			m_Scene.Spheres.push_back(sphere);
+		}
+
 
 		PointLight& pointLight = m_Scene.PointLights.emplace_back();
+		pointLight.Intesity = 20.0f;
+		pointLight.Position = { 0.0f, 4.0f, 0.0f };
 	}
 	virtual void OnUpdate(float ts) override {
 		if (m_Camera.OnUpdate(ts)) {
@@ -63,7 +121,10 @@ public:
 		if (ImGui::Button("Render")) {
 			Render();
 		}
-		ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate);
+		if (ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate))
+			m_Renderer.ResetFrameIndex();
+		if (ImGui::Checkbox("Preview Renderer", &m_Renderer.GetSettings().PreviewRenderer))
+			m_Renderer.ResetFrameIndex();
 
 		if (ImGui::Button("Reset")) {
 			m_Renderer.ResetFrameIndex();
@@ -76,9 +137,13 @@ public:
 			m_Scene.Spheres.push_back(sphere);
 			m_Renderer.ResetFrameIndex();
 		}
-		if (ImGui::Button("Add Material")) {
-			Material material;
-			m_Scene.Materials.push_back(material);
+		if (ImGui::Button("Add Diffuse Mat")) {
+			m_Scene.Materials.push_back(new DiffuseMaterial());
+			m_Renderer.ResetFrameIndex();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Add Refractive Mat")) {
+			m_Scene.Materials.push_back(new RefractiveMaterial());
 			m_Renderer.ResetFrameIndex();
 		}
 
@@ -109,7 +174,33 @@ public:
 		}
 		ImGui::End();
 
-		ImGui::Begin("Scene");
+		ImGui::Begin("Materials");
+		for (size_t i = 0; i < m_Scene.Materials.size(); i++)
+		{
+			ImGui::PushID(i);
+
+			Material* material = m_Scene.Materials[i];
+			if (material->GetMaterialType() == MaterialType::Diffuse) {
+				DiffuseMaterial* diffuse = (DiffuseMaterial*)material;
+				if (ImGui::ColorEdit3("Albedo", glm::value_ptr(diffuse->Albedo)))
+					m_Renderer.ResetFrameIndex();
+				if (ImGui::DragFloat("Roughness", &diffuse->Roughness, 0.05f, 0.0f, 1.0f))
+					m_Renderer.ResetFrameIndex();
+				if (ImGui::DragFloat("Metallic", &diffuse->Metallic, 0.05f, 0.0f, 1.0f))
+					m_Renderer.ResetFrameIndex();
+			}
+			else {
+				RefractiveMaterial* refractive = (RefractiveMaterial*)material;
+				if (ImGui::DragFloat("Refractive Index", &refractive->RefractiveIndex, 0.05f))
+					m_Renderer.ResetFrameIndex();
+			}
+
+			ImGui::Separator();
+			ImGui::PopID();
+		}
+		ImGui::End();
+
+		ImGui::Begin("Objects");
 		for (size_t i = 0; i < m_Scene.Spheres.size(); i++)
 		{
 			ImGui::PushID(i);
@@ -123,27 +214,8 @@ public:
 				m_Renderer.ResetFrameIndex();
 
 			ImGui::Separator();
-
 			ImGui::PopID();
 		}
-
-		for (size_t i = 0; i < m_Scene.Materials.size(); i++)
-		{
-			ImGui::PushID(i);
-
-			Material& material = m_Scene.Materials[i];
-			if(ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo)))
-				m_Renderer.ResetFrameIndex();
-			if(ImGui::DragFloat("Roughness", &material.Roughness, 0.05f, 0.0f, 1.0f))
-				m_Renderer.ResetFrameIndex();
-			if(ImGui::DragFloat("Metallic", &material.Metallic, 0.05f, 0.0f, 1.0f))
-				m_Renderer.ResetFrameIndex();
-
-			ImGui::Separator();
-
-			ImGui::PopID();
-		}
-		
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));

@@ -15,6 +15,7 @@ namespace RayTracing {
 		struct Settings
 		{
 			bool Accumulate = true;
+			bool PreviewRenderer = false;
 		};
 
 	public:
@@ -36,10 +37,14 @@ namespace RayTracing {
 
 			uint32_t ObjectIndex;
 		};
+
+		void TraceColorRay(Ray& ray, glm::vec3& color, const int& maxDepth, int& depth);
 		glm::vec4 PerPixel(uint32_t x, uint32_t y); // RayGen
 
 		glm::vec3 CaculatePointLight(const PointLight& pointLight, const HitPayload& payload);
-
+		
+		//TEMP
+		HitPayload TraceShadowRay(const Ray& ray);
 		HitPayload TraceRay(const Ray& ray);
 		HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
 		HitPayload Miss(const Ray& ray);
