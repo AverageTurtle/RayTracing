@@ -38,7 +38,7 @@ namespace RayTracing {
 			uint32_t ObjectIndex;
 		};
 
-		void TraceColorRay(Ray& ray, glm::vec3& color, const int& maxDepth, int& depth);
+		void TraceColorRay(Ray& ray, glm::vec3& color, glm::vec3& contribution, const int& maxDepth, int& depth);
 		glm::vec4 PerPixel(uint32_t x, uint32_t y); // RayGen
 
 		glm::vec3 CaculatePointLight(const PointLight& pointLight, const HitPayload& payload);

@@ -127,18 +127,16 @@ namespace RayTracing {
 		}
 	}
 
-	// returns true if it should continue the depth loop
-	void Renderer::TraceColorRay(Ray& ray, glm::vec3& color, const int& maxDepth, int& depth)
+	void Renderer::TraceColorRay(Ray& ray, glm::vec3& light, glm::vec3& contribution, const int& maxDepth, int& depth)
 	{
 		if (depth >= maxDepth) {
 			return;
 		}
-		depth++;
 		Renderer::HitPayload payload = Renderer::TraceRay(ray);
 		if (payload.HitDistance < 0.0001f)
 		{
 			//color = glm::vec3(0.01f, 0.01f, 0.01f);
-			color = glm::vec3(0.6f, 0.7f, 1.0f);
+			light = glm::vec3(0.6f, 0.7f, 1.0f);
 			return;
 		}
 
@@ -146,8 +144,8 @@ namespace RayTracing {
 		Material* material = m_ActiveScene->Materials[sphere.MaterialIndex];
 		//TODO see if we can make this a switch
 		if (material->GetMaterialType() == MaterialType::Diffuse) {
+			depth++;
 			DiffuseMaterial* diffuse = (DiffuseMaterial*)material;
-			glm::vec3 sphereColor = diffuse->Albedo;
 
 			if (diffuse->Roughness != 0.0f) {
 				glm::vec3 lightIntensity(0.0f);
@@ -155,13 +153,21 @@ namespace RayTracing {
 				{
 					lightIntensity += CaculatePointLight(pointLight, payload);
 				}
-				color = (sphereColor / ((float)M_PI) * lightIntensity);
+				light += ((float)M_PI) * lightIntensity + diffuse->GetEmission();
+				contribution *= diffuse->Albedo;
+
+				ray.Origin = payload.WorldPosition + (payload.WorldNormal * 0.0001f);
+				ray.Direction = glm::normalize(Walnut::Random::InUnitSphere() + payload.WorldNormal);
+
+				TraceColorRay(ray, light, contribution,maxDepth, depth);
+
 				return;
 			}
 
 			ray.Origin = payload.WorldPosition + (payload.WorldNormal * 0.0001f);
 			ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
-			TraceColorRay(ray, color, maxDepth, depth);
+
+			TraceColorRay(ray, light, contribution, maxDepth, depth);
 		}
 		// Default to glass for now
 		else {
@@ -173,22 +179,27 @@ namespace RayTracing {
 			reflectionRay.Origin = ray.Origin + (payload.WorldNormal * 0.0001f);
 			reflectionRay.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
 
-			glm::vec3 refractionColor(0.0f);
-			glm::vec3 reflectionColor(0.0f);
+			//glm::vec3 refractionColor(0.0f);
+			//glm::vec3 reflectionColor(0.0f);
+			///glm::vec3 reflectionContribution(1.0f);
+
+			//int depth2 = 0;
+			//TraceColorRay(reflectionRay, reflectionColor, reflectionContribution, 2, depth2);
+
 			if (fresnel < 1.0f) {
 				ray.Origin = payload.WorldPosition + (-payload.WorldNormal * 0.0001f);
 				ray.Direction += refract;
 
-				TraceColorRay(ray, refractionColor, maxDepth, depth);
+				//depth++;
+				TraceColorRay(ray, light, contribution, maxDepth, depth);
 			}
-			TraceColorRay(reflectionRay, reflectionColor, maxDepth, depth);
-			color = reflectionColor * fresnel + refractionColor * (1 - fresnel);
+			//contribution = reflectionColor * fresnel + refractionColor * (1 - fresnel);
 
 			return;
 			//if (refraction != glm::vec3(0.0f)) {
 			//	ray.Direction = refraction;
 			//}
-		} 
+		}
 	}
 
 	glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
@@ -198,6 +209,7 @@ namespace RayTracing {
 		ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()] + Walnut::Random::Vec3(-0.001f, 0.001f);
 		
 		glm::vec3 color(0.0f);
+		glm::vec3 contribution(1.0f);
 		if (m_Settings.PreviewRenderer) {
 			Renderer::HitPayload payload = TraceRay(ray);
 			if (payload.HitDistance < 0.0001f)
@@ -220,7 +232,7 @@ namespace RayTracing {
 		}
 		else {
 			int depth = 0;
-			TraceColorRay(ray, color, 1000, depth);
+			TraceColorRay(ray, color, contribution, 8, depth);
 		}
 
 
@@ -340,7 +352,7 @@ namespace RayTracing {
 			
 		}*/
 
-		return glm::vec4(color, 1.0f);
+		return glm::vec4(color*contribution, 1.0f);
 	}
 
 	glm::vec3 Renderer::CaculatePointLight(const PointLight& pointLight, const Renderer::HitPayload& payload)

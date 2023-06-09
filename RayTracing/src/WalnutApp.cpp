@@ -43,6 +43,8 @@ public:
 		DiffuseMaterial* pink = new DiffuseMaterial();
 		pink->Albedo = { 1.0f, 0.3, 1.0f };
 		pink->Roughness = 1.0f;
+		pink->EmissionColor = { 1.0f, 0.3, 1.0f };
+		pink->EmissionPower = 5.0f;
 		m_Scene.Materials.push_back(pink);
 
 		{
@@ -63,7 +65,7 @@ public:
 
 		{
 			Sphere sphere;
-			sphere.Position = { 0.0f, -1010.0f, 0.0f };
+			sphere.Position = { 0.0f, -1001.0f, 0.0f };
 			sphere.Radius = 1000.0f;
 			sphere.MaterialIndex = 1;
 			m_Scene.Spheres.push_back(sphere);
@@ -105,9 +107,9 @@ public:
 		}
 
 
-		PointLight& pointLight = m_Scene.PointLights.emplace_back();
-		pointLight.Intesity = 20.0f;
-		pointLight.Position = { 0.0f, 4.0f, 0.0f };
+		//PointLight& pointLight = m_Scene.PointLights.emplace_back();
+		//pointLight.Intesity = 20.0f;
+		//pointLight.Position = { 0.0f, 4.0f, 0.0f };
 	}
 	virtual void OnUpdate(float ts) override {
 		if (m_Camera.OnUpdate(ts)) {
@@ -187,6 +189,10 @@ public:
 				if (ImGui::DragFloat("Roughness", &diffuse->Roughness, 0.05f, 0.0f, 1.0f))
 					m_Renderer.ResetFrameIndex();
 				if (ImGui::DragFloat("Metallic", &diffuse->Metallic, 0.05f, 0.0f, 1.0f))
+					m_Renderer.ResetFrameIndex();
+				if (ImGui::ColorEdit3("Emission Color", glm::value_ptr(diffuse->EmissionColor)))
+					m_Renderer.ResetFrameIndex();
+				if (ImGui::DragFloat("Emission Power", &diffuse->EmissionPower, 0.05f, 0.0f, FLT_MAX))
 					m_Renderer.ResetFrameIndex();
 			}
 			else {
